@@ -298,6 +298,14 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (GPIO_Pin == B1_Pin)
+	{
+		HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+	}
+}
+
 /* USER CODE END 4 */
 
 /**
