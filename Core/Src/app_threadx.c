@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "main.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define THREAD_STACK_SIZE 1024
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,12 +43,13 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+uint8_t thread_stack[THREAD_STACK_SIZE];
+TX_THREAD thread_ptr;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-
+void flash_led_thread_entry(ULONG initial_input);
 /* USER CODE END PFP */
 
 /**
@@ -63,6 +64,20 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   /* USER CODE BEGIN App_ThreadX_Init */
   (void)byte_pool;
+
+  tx_thread_create(
+	  &thread_ptr,
+	  "flash_led",
+	  flash_led_thread_entry,
+	  0x1234,
+	  thread_stack,
+	  THREAD_STACK_SIZE,
+	  15,
+	  15,
+	  TX_NO_TIME_SLICE,
+	  TX_AUTO_START
+  );
+
   /* USER CODE END App_ThreadX_Init */
 
   return ret;
@@ -87,5 +102,14 @@ void MX_ThreadX_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
-
+void flash_led_thread_entry(ULONG initial_input)
+{
+	while(1)
+	{
+		HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+		// the sleep did not work and froze the board
+		// Solution: https://community.st.com/t5/stm32-mcus-embedded-software/threads-get-suspended-forever-after-calling-tx-thread-sleep/td-p/177254
+		tx_thread_sleep(50);
+	}
+}
 /* USER CODE END 1 */
