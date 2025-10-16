@@ -44,10 +44,7 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
 uint8_t LED_thread_stack[THREAD_STACK_SIZE];
-uint8_t BTN_thread_stack[THREAD_STACK_SIZE];
-
 TX_THREAD LED_thread_ptr;
-TX_THREAD BTN_thread_ptr;
 
 TX_SEMAPHORE LED_semaphore;
 /* USER CODE END PV */
@@ -55,7 +52,6 @@ TX_SEMAPHORE LED_semaphore;
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
 void LED_thread_entry(ULONG inital_input);
-void BTN_thread_entry(ULONG inital_input);
 /* USER CODE END PFP */
 
 /**
@@ -71,7 +67,7 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   /* USER CODE BEGIN App_ThreadX_Init */
   (void)byte_pool;
 
-  tx_semaphore_create(&LED_semaphore, "LED_Toggle_Semaphoe", 1);
+  tx_semaphore_create(&LED_semaphore, "LED_Toggle_Semaphoe", 0);
 
   tx_thread_create(
 	  &LED_thread_ptr,
@@ -79,19 +75,6 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 	  LED_thread_entry,
 	  0x1234,
 	  LED_thread_stack,
-	  THREAD_STACK_SIZE,
-	  15,
-	  15,
-	  TX_NO_TIME_SLICE,
-	  TX_AUTO_START
-  );
-
-  tx_thread_create(
-	  &BTN_thread_ptr,
-	  "BTN_thread",
-	  BTN_thread_entry,
-	  0x1234,
-	  BTN_thread_stack,
 	  THREAD_STACK_SIZE,
 	  15,
 	  15,
@@ -133,24 +116,16 @@ void LED_thread_entry(ULONG inital_input)
 		if(!status)
 		{
 			HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+			tx_thread_sleep(50);
 		}
 	}
 }
 
-void BTN_thread_entry(ULONG initial_input)
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	while(1)
+	if(GPIO_Pin == B1_Pin)
 	{
-		UINT button_pressed = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
-
-		if(button_pressed)
-		{
-			tx_semaphore_put(&LED_semaphore);
-		}
-		else
-		{
-			tx_thread_sleep(10);
-		}
+		tx_semaphore_put(&LED_semaphore);
 	}
 }
 /* USER CODE END 1 */
