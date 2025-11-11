@@ -50,6 +50,9 @@ TX_THREAD serial_thread_ptr;
 uint8_t led_thread_stack[THREAD_STACK_SIZE];
 TX_THREAD led_thread_ptr;
 
+#define TRACEX_BUFFER_SIZE 64000
+uint8_t tracex_buffer[64000];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,6 +73,8 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   /* USER CODE BEGIN App_ThreadX_Init */
   (void)byte_pool;
+
+  tx_trace_enable(&tracex_buffer,TRACEX_BUFFER_SIZE,30);
 
   tx_thread_create(
   	  &serial_thread_ptr,
@@ -92,7 +97,7 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 	  led_thread_stack,
 	  THREAD_STACK_SIZE,
 	  10,
-	  15,
+	  10,
 	  TX_NO_TIME_SLICE,
 	  TX_AUTO_START
   );
@@ -122,7 +127,7 @@ void MX_ThreadX_Init(void)
 /* USER CODE BEGIN 1 */
 void serial_thread_entry(ULONG inital_input)
 {
-	char msg[] = "UART Thread running! And now this has become a really reaaaally loooooong string!";
+	char msg[] = "UART Thread running!";
 
 	while (1)
 	{
