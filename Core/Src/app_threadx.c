@@ -43,7 +43,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+#define TRACEX_BUFFER_SIZE 64000
+uint8_t tracex_buffer[64000];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,6 +64,8 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   /* USER CODE BEGIN App_ThreadX_Init */
   (void)byte_pool;
+
+  tx_trace_enable(&tracex_buffer,TRACEX_BUFFER_SIZE,30);
   /* USER CODE END App_ThreadX_Init */
 
   return ret;

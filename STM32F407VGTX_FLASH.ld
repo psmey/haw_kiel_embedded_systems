@@ -133,6 +133,12 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
+  .trace (NOLOAD):
+  {
+    . = ALIGN(4);
+    *(.trace)
+  } > RAM_D1
+
   /* Used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 
