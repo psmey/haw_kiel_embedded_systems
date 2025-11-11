@@ -135,8 +135,8 @@ SECTIONS
 
   .trace (NOLOAD):
   {
-    . = ALIGN(4);
-    *(.trace)
+  	. = ALIGN(4);
+      *(.trace)
   } > RAM_D1
 
   /* Used by the startup to initialize data */
