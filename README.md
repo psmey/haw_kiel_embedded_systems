@@ -50,3 +50,8 @@ Speedy thread cycle: 22 ticks
 Speedy thread cycle: 21 ticks
 ...
 ```
+### 4.7.3. Critical section – USART
+
+![4.7.3. Critical section – USART](assets/4_7_3_Critical_section_USART.png)
+
+![4.7.3. Critical section – USART HTerm](assets/4_7_3_Critical_section_USART_HTerm.png)

@@ -53,14 +53,20 @@ TX_THREAD speedy_thread_ptr;
 uint8_t slow_thread_stack[THREAD_STACK_SIZE];
 TX_THREAD slow_thread_ptr;
 
+uint8_t uart_thread_stack[THREAD_STACK_SIZE];
+TX_THREAD uart_thread_ptr;
+
 TX_MUTEX mutex_ptr;
 UINT status;
+
+char msg[64];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
 void speedy_thread_entry(ULONG initial_input);
 void slow_thread_entry(ULONG initial_input);
+void uart_thread_entry(ULONG initial_input);
 /* USER CODE END PFP */
 
 /**
@@ -102,6 +108,19 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 	15,
 	TX_NO_TIME_SLICE,
 	TX_AUTO_START
+  );
+
+  tx_thread_create(
+  	&uart_thread_ptr,
+  	"uart_thread",
+  	uart_thread_entry,
+  	0x01234,
+  	uart_thread_stack,
+  	THREAD_STACK_SIZE,
+  	15,
+  	15,
+  	TX_NO_TIME_SLICE,
+  	TX_AUTO_START
   );
 
   status = tx_mutex_create(&mutex_ptr, "mutex_ptr", TX_NO_INHERIT);
@@ -152,9 +171,7 @@ void speedy_thread_entry(ULONG initial_input)
 		end_tick = tx_time_get();
 		duration = end_tick - start_tick;
 
-		char msg[64];
 		sprintf(msg, "Speedy thread cycle: %lu ticks", duration);
-		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 	}
 }
 
@@ -181,9 +198,16 @@ void slow_thread_entry(ULONG initial_input)
 		end_tick = tx_time_get();
 		duration = end_tick - start_tick;
 
-		char msg[64];
 		sprintf(msg, "Slow thread cycle: %lu ticks", duration);
+	}
+}
+
+void uart_thread_entry(ULONG initial_input)
+{
+	while(1)
+	{
 		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+		tx_thread_sleep(10);
 	}
 }
 /* USER CODE END 1 */
