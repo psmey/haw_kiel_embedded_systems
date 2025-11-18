@@ -55,3 +55,9 @@ Speedy thread cycle: 21 ticks
 ![4.7.3. Critical section – USART](assets/4_7_3_Critical_section_USART.png)
 
 ![4.7.3. Critical section – USART HTerm](assets/4_7_3_Critical_section_USART_HTerm.png)
+
+### 4.8. Queues
+
+![4.8. Queues](assets/4_8_Queues.png)
+
+![4.8. Queues HTerm](assets/4_8_Queues_HTerm.png)

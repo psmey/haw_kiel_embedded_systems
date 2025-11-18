@@ -59,7 +59,8 @@ TX_THREAD uart_thread_ptr;
 TX_MUTEX mutex_ptr;
 UINT status;
 
-char msg[64];
+TX_QUEUE queue_ptr;
+static CHAR queue_memory[64];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -123,7 +124,9 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   	TX_AUTO_START
   );
 
-  status = tx_mutex_create(&mutex_ptr, "mutex_ptr", TX_NO_INHERIT);
+  status = tx_mutex_create(&mutex_ptr, "mutex", TX_NO_INHERIT);
+
+  tx_queue_create(&queue_ptr, "queue", 8, &queue_memory, sizeof(queue_memory));
   /* USER CODE END App_ThreadX_Init */
 
   return ret;
@@ -171,7 +174,10 @@ void speedy_thread_entry(ULONG initial_input)
 		end_tick = tx_time_get();
 		duration = end_tick - start_tick;
 
-		sprintf(msg, "Speedy thread cycle: %lu ticks", duration);
+		char rx_msg[64];
+		sprintf(rx_msg, "Speedy thread cycle: %lu ticks", duration);
+
+		tx_queue_send(&queue_ptr, rx_msg, TX_NO_WAIT);
 	}
 }
 
@@ -198,7 +204,10 @@ void slow_thread_entry(ULONG initial_input)
 		end_tick = tx_time_get();
 		duration = end_tick - start_tick;
 
-		sprintf(msg, "Slow thread cycle: %lu ticks", duration);
+		char rx_msg[64];
+		sprintf(rx_msg, "Slow thread cycle: %lu ticks", duration);
+
+		tx_queue_send(&queue_ptr, rx_msg, TX_NO_WAIT);
 	}
 }
 
@@ -206,7 +215,11 @@ void uart_thread_entry(ULONG initial_input)
 {
 	while(1)
 	{
-		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+		char rx_msg[64];
+		tx_queue_receive(&queue_ptr, rx_msg, TX_WAIT_FOREVER);
+
+		HAL_UART_Transmit(&huart2, (uint8_t*)rx_msg, strlen(rx_msg), HAL_MAX_DELAY);
+
 		tx_thread_sleep(10);
 	}
 }
