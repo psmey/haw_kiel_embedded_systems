@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "main.h"
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -130,37 +131,45 @@ void MX_ThreadX_Init(void)
 /* USER CODE BEGIN 1 */
 void speedy_thread_entry(ULONG initial_input)
 {
+	ULONG start_tick, end_tick, duration;
+
 	while(1)
 	{
+		start_tick = tx_time_get();
+
 		tx_thread_sleep(2);
-
-		status = tx_mutex_get(&mutex_ptr, TX_WAIT_FOREVER);
-		HAL_Delay(5);
-		status = tx_mutex_put(&mutex_ptr);
-
+		tx_thread_sleep(5);
 		tx_thread_sleep(4);
+		tx_thread_sleep(3);
 
-		status = tx_mutex_get(&mutex_ptr, TX_WAIT_FOREVER);
-		HAL_Delay(3);
-		status = tx_mutex_put(&mutex_ptr);
+		end_tick = tx_time_get();
+		duration = end_tick - start_tick;
+
+		char msg[64];
+		sprintf(msg, "Speedy thread cycle: %lu ticks", duration);
+		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 	}
 }
 
 void slow_thread_entry(ULONG initial_input)
 {
+	ULONG start_tick, end_tick, duration;
+
 	while(1)
 	{
-		status = tx_mutex_get(&mutex_ptr, TX_WAIT_FOREVER);
-		HAL_Delay(12);
-		status = tx_mutex_put(&mutex_ptr);
+		start_tick = tx_time_get();
 
+		tx_thread_sleep(12);
 		tx_thread_sleep(8);
-
-		status = tx_mutex_get(&mutex_ptr, TX_WAIT_FOREVER);
-		HAL_Delay(11);
-		status = tx_mutex_put(&mutex_ptr);
-
+		tx_thread_sleep(11);
 		tx_thread_sleep(9);
+
+		end_tick = tx_time_get();
+		duration = end_tick - start_tick;
+
+		char msg[64];
+		sprintf(msg, "Thread 2 cycle: %lu ticks", duration);
+		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 	}
 }
 /* USER CODE END 1 */
