@@ -11,6 +11,7 @@
   - [4.8. Queues](#48-queues)
   - [4.9. Thread priorities \& Preemption](#49-thread-priorities--preemption)
     - [Case 0 – Round-Robin Scheduling \& Same Priority](#case-0--round-robin-scheduling--same-priority)
+    - [Case 1 – Preemptive Scheduling](#case-1--preemptive-scheduling)
 
 ## Tasks
 
@@ -80,3 +81,7 @@ Speedy thread cycle: 21 ticks
 #### Case 0 – Round-Robin Scheduling & Same Priority
 
 ![4.9. Thread priorities & Preemption Case 0 – Round-Robin Scheduling](assets/4_9_Thread_priorities_Preemption_case_0.png)
+
+#### Case 1 – Preemptive Scheduling
+
+![4.9. Thread priorities & Preemption Case 1 – Preemptive Scheduling](assets/4_9_Thread_priorities_Preemption_case_1.png)
