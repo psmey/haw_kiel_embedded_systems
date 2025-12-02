@@ -47,27 +47,39 @@
 /* USER CODE BEGIN PV */
 uint8_t tracex_buffer[TRACEX_BUFFER_SIZE];
 
-uint8_t speedy_thread_stack[THREAD_STACK_SIZE];
-TX_THREAD speedy_thread_ptr;
+uint8_t thread_d_producer_stack[THREAD_STACK_SIZE];
+TX_THREAD thread_d_producer;
 
-uint8_t slow_thread_stack[THREAD_STACK_SIZE];
-TX_THREAD slow_thread_ptr;
+uint8_t thread_a_stack[THREAD_STACK_SIZE];
+TX_THREAD thread_a;
 
-uint8_t uart_thread_stack[THREAD_STACK_SIZE];
-TX_THREAD uart_thread_ptr;
+uint8_t thread_b_stack[THREAD_STACK_SIZE];
+TX_THREAD thread_b;
 
-TX_MUTEX mutex_ptr;
-UINT status;
+uint8_t thread_c_stack[THREAD_STACK_SIZE];
+TX_THREAD thread_c;
 
-TX_QUEUE queue_ptr;
-static CHAR queue_memory[64];
+TX_QUEUE queue_a;
+static CHAR queue_a_memory[24];
+
+TX_QUEUE queue_b;
+static CHAR queue_b_memory[24];
+
+TX_QUEUE queue_c;
+static CHAR queue_c_memory[24];
+
+uint32_t count_a;
+uint32_t count_b;
+uint32_t count_c;
+uint32_t count_d;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-void speedy_thread_entry(ULONG initial_input);
-void slow_thread_entry(ULONG initial_input);
-void uart_thread_entry(ULONG initial_input);
+void thread_d_producer_entry(ULONG initial_input);
+void thread_a_entry(ULONG initial_input);
+void thread_b_entry(ULONG initial_input);
+void thread_c_entry(ULONG initial_input);
 /* USER CODE END PFP */
 
 /**
@@ -86,47 +98,60 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   tx_trace_enable(&tracex_buffer, TRACEX_BUFFER_SIZE, 30);
 
   tx_thread_create(
-	&speedy_thread_ptr,
-	"speedy_thread",
-	speedy_thread_entry,
+	&thread_d_producer,
+	"thread_d_producer",
+	thread_d_producer_entry,
 	0x01234,
-	speedy_thread_stack,
+	thread_d_producer_stack,
 	THREAD_STACK_SIZE,
-	5,
-	5,
+	1,
+	1,
 	TX_NO_TIME_SLICE,
 	TX_AUTO_START
   );
 
   tx_thread_create(
-	&slow_thread_ptr,
-	"slow_thread",
-	slow_thread_entry,
-	0x01234,
-	slow_thread_stack,
-	THREAD_STACK_SIZE,
-	15,
-	15,
-	TX_NO_TIME_SLICE,
-	TX_AUTO_START
-  );
-
-  tx_thread_create(
-  	&uart_thread_ptr,
-  	"uart_thread",
-  	uart_thread_entry,
+  	&thread_a,
+  	"thread_a",
+	thread_a_entry,
   	0x01234,
-  	uart_thread_stack,
+	thread_a_stack,
   	THREAD_STACK_SIZE,
-  	15,
-  	15,
+  	1,
+  	1,
   	TX_NO_TIME_SLICE,
   	TX_AUTO_START
   );
 
-  status = tx_mutex_create(&mutex_ptr, "mutex", TX_NO_INHERIT);
+  tx_thread_create(
+  	&thread_b,
+  	"thread_b",
+	thread_b_entry,
+  	0x01234,
+	thread_b_stack,
+  	THREAD_STACK_SIZE,
+  	1,
+  	1,
+  	TX_NO_TIME_SLICE,
+  	TX_AUTO_START
+  );
 
-  tx_queue_create(&queue_ptr, "queue", 8, &queue_memory, sizeof(queue_memory));
+  tx_thread_create(
+  	&thread_c,
+  	"thread_c",
+	thread_c_entry,
+  	0x01234,
+	thread_c_stack,
+  	THREAD_STACK_SIZE,
+  	1,
+  	1,
+  	TX_NO_TIME_SLICE,
+  	TX_AUTO_START
+  );
+
+  tx_queue_create(&queue_a, "queue", 3, &queue_a_memory, sizeof(queue_a_memory));
+  tx_queue_create(&queue_b, "queue", 3, &queue_b_memory, sizeof(queue_b_memory));
+  tx_queue_create(&queue_c, "queue", 3, &queue_c_memory, sizeof(queue_c_memory));
   /* USER CODE END App_ThreadX_Init */
 
   return ret;
@@ -151,76 +176,65 @@ void MX_ThreadX_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
-void speedy_thread_entry(ULONG initial_input)
-{
-	ULONG start_tick, end_tick, duration;
+void thread_d_producer_entry(ULONG initial_input) {
+	char msg[24];
 
 	while(1)
 	{
-		start_tick = tx_time_get();
+		for (int i = 0; i < 3; i++)
+		{
+			tx_queue_send(&queue_a, msg, TX_NO_WAIT);
+			tx_queue_send(&queue_b, msg, TX_NO_WAIT);
+			tx_queue_send(&queue_c, msg, TX_NO_WAIT);
+		}
 
-		tx_thread_sleep(2);
-
-		tx_mutex_get(&mutex_ptr, TX_WAIT_FOREVER);
-		tx_thread_sleep(5);
-		tx_mutex_put(&mutex_ptr);
-
-		tx_thread_sleep(4);
-
-		tx_mutex_get(&mutex_ptr, TX_WAIT_FOREVER);
-		tx_thread_sleep(3);
-		tx_mutex_put(&mutex_ptr);
-
-		end_tick = tx_time_get();
-		duration = end_tick - start_tick;
-
-		char rx_msg[64];
-		sprintf(rx_msg, "Speedy thread cycle: %lu ticks", duration);
-
-		tx_queue_send(&queue_ptr, rx_msg, TX_NO_WAIT);
+		count_d++;
+		tx_thread_relinquish();
 	}
 }
 
-void slow_thread_entry(ULONG initial_input)
-{
-	ULONG start_tick, end_tick, duration;
+void thread_a_entry(ULONG initial_input) {
+	char msg[24];
 
 	while(1)
 	{
-		start_tick = tx_time_get();
+		for (int i = 0; i < 3; i++)
+		{
+			tx_queue_receive(&queue_a, msg, TX_WAIT_FOREVER);
+		}
 
-		tx_mutex_get(&mutex_ptr, TX_WAIT_FOREVER);
-		tx_thread_sleep(12);
-		tx_mutex_put(&mutex_ptr);
+		count_a++;
+		tx_thread_relinquish();
+	}
 
-		tx_thread_sleep(8);
+}
 
-		tx_mutex_get(&mutex_ptr, TX_WAIT_FOREVER);
-		tx_thread_sleep(11);
-		tx_mutex_put(&mutex_ptr);
+void thread_b_entry(ULONG initial_input) {
+	char msg[24];
 
-		tx_thread_sleep(9);
+	while(1)
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			tx_queue_receive(&queue_b, msg, TX_WAIT_FOREVER);
+		}
 
-		end_tick = tx_time_get();
-		duration = end_tick - start_tick;
-
-		char rx_msg[64];
-		sprintf(rx_msg, "Slow thread cycle: %lu ticks", duration);
-
-		tx_queue_send(&queue_ptr, rx_msg, TX_NO_WAIT);
+		count_b++;
+		tx_thread_relinquish();
 	}
 }
 
-void uart_thread_entry(ULONG initial_input)
-{
+void thread_c_entry(ULONG initial_input) {
+	char msg[24];
+
 	while(1)
 	{
-		char rx_msg[64];
-		tx_queue_receive(&queue_ptr, rx_msg, TX_WAIT_FOREVER);
+		for (int i = 0; i < 3; i++) {
+			tx_queue_receive(&queue_c, msg, TX_WAIT_FOREVER);
+		}
 
-		HAL_UART_Transmit(&huart2, (uint8_t*)rx_msg, strlen(rx_msg), HAL_MAX_DELAY);
-
-		tx_thread_sleep(10);
+		count_c++;
+		tx_thread_relinquish();
 	}
 }
 /* USER CODE END 1 */
