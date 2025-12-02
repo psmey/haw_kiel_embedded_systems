@@ -60,13 +60,13 @@ uint8_t thread_c_stack[THREAD_STACK_SIZE];
 TX_THREAD thread_c;
 
 TX_QUEUE queue_a;
-static CHAR queue_a_memory[24];
+static CHAR queue_a_memory[96];
 
 TX_QUEUE queue_b;
-static CHAR queue_b_memory[24];
+static CHAR queue_b_memory[96];
 
 TX_QUEUE queue_c;
-static CHAR queue_c_memory[24];
+static CHAR queue_c_memory[96];
 
 uint32_t count_a;
 uint32_t count_b;
@@ -97,6 +97,10 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   tx_trace_enable(&tracex_buffer, TRACEX_BUFFER_SIZE, 30);
 
+  tx_queue_create(&queue_a, "queue", 1, &queue_a_memory, sizeof(queue_a_memory));
+  tx_queue_create(&queue_b, "queue", 1, &queue_b_memory, sizeof(queue_b_memory));
+  tx_queue_create(&queue_c, "queue", 1, &queue_c_memory, sizeof(queue_c_memory));
+
   tx_thread_create(
 	&thread_d_producer,
 	"thread_d_producer",
@@ -104,7 +108,7 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 	0x01234,
 	thread_d_producer_stack,
 	THREAD_STACK_SIZE,
-	1,
+	4,
 	1,
 	TX_NO_TIME_SLICE,
 	TX_AUTO_START
@@ -130,8 +134,8 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   	0x01234,
 	thread_b_stack,
   	THREAD_STACK_SIZE,
-  	1,
-  	1,
+  	2,
+  	2,
   	TX_NO_TIME_SLICE,
   	TX_AUTO_START
   );
@@ -143,15 +147,12 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   	0x01234,
 	thread_c_stack,
   	THREAD_STACK_SIZE,
-  	1,
-  	1,
+  	3,
+  	3,
   	TX_NO_TIME_SLICE,
   	TX_AUTO_START
   );
 
-  tx_queue_create(&queue_a, "queue", 3, &queue_a_memory, sizeof(queue_a_memory));
-  tx_queue_create(&queue_b, "queue", 3, &queue_b_memory, sizeof(queue_b_memory));
-  tx_queue_create(&queue_c, "queue", 3, &queue_c_memory, sizeof(queue_c_memory));
   /* USER CODE END App_ThreadX_Init */
 
   return ret;
@@ -194,7 +195,7 @@ void thread_d_producer_entry(ULONG initial_input) {
 }
 
 void thread_a_entry(ULONG initial_input) {
-	char msg[24];
+	char msg[32];
 
 	while(1)
 	{
@@ -210,7 +211,7 @@ void thread_a_entry(ULONG initial_input) {
 }
 
 void thread_b_entry(ULONG initial_input) {
-	char msg[24];
+	char msg[32];
 
 	while(1)
 	{
@@ -225,7 +226,7 @@ void thread_b_entry(ULONG initial_input) {
 }
 
 void thread_c_entry(ULONG initial_input) {
-	char msg[24];
+	char msg[32];
 
 	while(1)
 	{

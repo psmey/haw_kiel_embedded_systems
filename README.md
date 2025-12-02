@@ -13,6 +13,7 @@
     - [Case 0 – Round-Robin Scheduling \& Same Priority](#case-0--round-robin-scheduling--same-priority)
     - [Case 1 – Preemptive Scheduling](#case-1--preemptive-scheduling)
     - [Case 2 – Round-Robin Scheduling \& Same Priority](#case-2--round-robin-scheduling--same-priority)
+    - [Case 3 – Preemption-Threshold Scheduling](#case-3--preemption-threshold-scheduling)
 
 ## Tasks
 
@@ -92,3 +93,7 @@ Speedy thread cycle: 21 ticks
 It's the same as case 0.
 
 ![4.9. Thread priorities & Preemption Case 2 – Round-Robin Scheduling](assets/4_9_Thread_priorities_Preemption_case_0.png)
+
+#### Case 3 – Preemption-Threshold Scheduling
+
+![4.9. Thread priorities & Preemption Case 3 – Preemption-Threshold Scheduling](assets/4_9_Thread_priorities_Preemption_case_3.png)
