@@ -104,8 +104,8 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 	0x01234,
 	thread_d_producer_stack,
 	THREAD_STACK_SIZE,
-	1,
-	1,
+	4,
+	4,
 	TX_NO_TIME_SLICE,
 	TX_AUTO_START
   );
@@ -130,8 +130,8 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   	0x01234,
 	thread_b_stack,
   	THREAD_STACK_SIZE,
-  	1,
-  	1,
+  	2,
+  	2,
   	TX_NO_TIME_SLICE,
   	TX_AUTO_START
   );
@@ -143,8 +143,8 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   	0x01234,
 	thread_c_stack,
   	THREAD_STACK_SIZE,
-  	1,
-  	1,
+  	3,
+  	3,
   	TX_NO_TIME_SLICE,
   	TX_AUTO_START
   );
