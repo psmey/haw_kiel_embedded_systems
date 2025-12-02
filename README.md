@@ -3,7 +3,7 @@
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
-- [Tasks](#tasks)
+- [Exercise 1](#exercise-1)
   - [4.6 TraceX](#46-tracex)
   - [4.7.1 Critical sections](#471-critical-sections)
   - [4.7.2 Thread runtime \& Critical Sections](#472-thread-runtime--critical-sections)
@@ -14,8 +14,10 @@
     - [Case 1 – Preemptive Scheduling](#case-1--preemptive-scheduling)
     - [Case 2 – Round-Robin Scheduling \& Same Priority](#case-2--round-robin-scheduling--same-priority)
     - [Case 3 – Preemption-Threshold Scheduling](#case-3--preemption-threshold-scheduling)
+- [Exercise 2](#exercise-2)
+  - [4.1 Memory pool – Gatekeeper](#41-memory-pool--gatekeeper)
 
-## Tasks
+## Exercise 1
 
 ### 4.6 TraceX
 
@@ -97,3 +99,11 @@ It's the same as case 0.
 #### Case 3 – Preemption-Threshold Scheduling
 
 ![4.9. Thread priorities & Preemption Case 3 – Preemption-Threshold Scheduling](assets/4_9_Thread_priorities_Preemption_case_3.png)
+
+## Exercise 2
+
+### 4.1 Memory pool – Gatekeeper
+
+![4.1 Memory pool – Gatekeeper HTerm](assets/4_1_Memory_pool_Gatekeeper_HTerm.png)
+
+![4.1 Memory pool – Gatekeeper](assets/4_1_Memory_pool_Gatekeeper.png)

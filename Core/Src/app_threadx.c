@@ -36,6 +36,10 @@
 /* USER CODE BEGIN PD */
 #define TRACEX_BUFFER_SIZE 64000
 #define THREAD_STACK_SIZE 1024
+#define MESSAGE_LENGTH 64
+
+// a char is 8 bits
+#define CHAR_IN_ONE_BYTE 4
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,39 +51,24 @@
 /* USER CODE BEGIN PV */
 uint8_t tracex_buffer[TRACEX_BUFFER_SIZE];
 
-uint8_t thread_d_producer_stack[THREAD_STACK_SIZE];
-TX_THREAD thread_d_producer;
+uint8_t thread_gatekeeper_stack[THREAD_STACK_SIZE];
+TX_THREAD thread_gatekeeper;
 
-uint8_t thread_a_stack[THREAD_STACK_SIZE];
-TX_THREAD thread_a;
+uint8_t thread_1_stack[THREAD_STACK_SIZE];
+TX_THREAD thread_1;
 
-uint8_t thread_b_stack[THREAD_STACK_SIZE];
-TX_THREAD thread_b;
+uint8_t thread_2_stack[THREAD_STACK_SIZE];
+TX_THREAD thread_2;
 
-uint8_t thread_c_stack[THREAD_STACK_SIZE];
-TX_THREAD thread_c;
-
-TX_QUEUE queue_a;
-static CHAR queue_a_memory[96];
-
-TX_QUEUE queue_b;
-static CHAR queue_b_memory[96];
-
-TX_QUEUE queue_c;
-static CHAR queue_c_memory[96];
-
-uint32_t count_a;
-uint32_t count_b;
-uint32_t count_c;
-uint32_t count_d;
+TX_QUEUE queue;
+static CHAR queue_memory[CHAR_IN_ONE_BYTE * MESSAGE_LENGTH * 64];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-void thread_d_producer_entry(ULONG initial_input);
-void thread_a_entry(ULONG initial_input);
-void thread_b_entry(ULONG initial_input);
-void thread_c_entry(ULONG initial_input);
+void thread_gatekeeper_entry(ULONG initial_input);
+void thread_1_entry(ULONG initial_input);
+void thread_2_entry(ULONG initial_input);
 /* USER CODE END PFP */
 
 /**
@@ -97,29 +86,27 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   tx_trace_enable(&tracex_buffer, TRACEX_BUFFER_SIZE, 30);
 
-  tx_queue_create(&queue_a, "queue", 1, &queue_a_memory, sizeof(queue_a_memory));
-  tx_queue_create(&queue_b, "queue", 1, &queue_b_memory, sizeof(queue_b_memory));
-  tx_queue_create(&queue_c, "queue", 1, &queue_c_memory, sizeof(queue_c_memory));
+  tx_queue_create(&queue, "queue", 16, &queue_memory, sizeof(queue_memory));
 
   tx_thread_create(
-	&thread_d_producer,
-	"thread_d_producer",
-	thread_d_producer_entry,
+	&thread_gatekeeper,
+	"thread_gatekeeper",
+	thread_gatekeeper_entry,
 	0x01234,
-	thread_d_producer_stack,
+	thread_gatekeeper_stack,
 	THREAD_STACK_SIZE,
-	4,
+	1,
 	1,
 	TX_NO_TIME_SLICE,
 	TX_AUTO_START
   );
 
   tx_thread_create(
-  	&thread_a,
-  	"thread_a",
-	thread_a_entry,
+  	&thread_1,
+  	"thread_1",
+	thread_1_entry,
   	0x01234,
-	thread_a_stack,
+	thread_1_stack,
   	THREAD_STACK_SIZE,
   	1,
   	1,
@@ -128,27 +115,14 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   );
 
   tx_thread_create(
-  	&thread_b,
-  	"thread_b",
-	thread_b_entry,
+  	&thread_2,
+  	"thread_2",
+	thread_2_entry,
   	0x01234,
-	thread_b_stack,
+	thread_2_stack,
   	THREAD_STACK_SIZE,
-  	2,
-  	2,
-  	TX_NO_TIME_SLICE,
-  	TX_AUTO_START
-  );
-
-  tx_thread_create(
-  	&thread_c,
-  	"thread_c",
-	thread_c_entry,
-  	0x01234,
-	thread_c_stack,
-  	THREAD_STACK_SIZE,
-  	3,
-  	3,
+  	1,
+  	1,
   	TX_NO_TIME_SLICE,
   	TX_AUTO_START
   );
@@ -177,65 +151,52 @@ void MX_ThreadX_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
-void thread_d_producer_entry(ULONG initial_input) {
-	char msg[24];
+void thread_1_entry(ULONG initial_input) {
+	char msg[MESSAGE_LENGTH];
+	ULONG count, time;
 
 	while(1)
 	{
-		for (int i = 0; i < 3; i++)
-		{
-			tx_queue_send(&queue_a, msg, TX_NO_WAIT);
-			tx_queue_send(&queue_b, msg, TX_NO_WAIT);
-			tx_queue_send(&queue_c, msg, TX_NO_WAIT);
-		}
+		count++;
+		time = tx_time_get();
 
-		count_d++;
-		tx_thread_relinquish();
+		sprintf(msg, "Thread 1: executed %lu times, current system time: %lu.", count, time);
+
+		tx_queue_send(&queue, msg, TX_NO_WAIT);
+
+		tx_thread_sleep(8);
 	}
 }
 
-void thread_a_entry(ULONG initial_input) {
-	char msg[32];
+void thread_2_entry(ULONG initial_input) {
+	char msg[MESSAGE_LENGTH];
+	ULONG count, time;
 
 	while(1)
 	{
-		for (int i = 0; i < 3; i++)
-		{
-			tx_queue_receive(&queue_a, msg, TX_WAIT_FOREVER);
-		}
+		count++;
+		time = tx_time_get();
 
-		count_a++;
-		tx_thread_relinquish();
+		sprintf(msg, "Thread 2: executed %lu times, current system time: %lu.", count, time);
+
+		tx_queue_send(&queue, msg, TX_NO_WAIT);
+
+		tx_thread_sleep(12);
 	}
-
 }
 
-void thread_b_entry(ULONG initial_input) {
-	char msg[32];
+void thread_gatekeeper_entry(ULONG initial_input) {
+	char msg[MESSAGE_LENGTH];
 
 	while(1)
 	{
-		for (int i = 0; i < 3; i++)
-		{
-			tx_queue_receive(&queue_b, msg, TX_WAIT_FOREVER);
-		}
+		tx_queue_receive(&queue, msg, TX_WAIT_FOREVER);
 
-		count_b++;
-		tx_thread_relinquish();
+		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+
+		tx_thread_sleep(30);
 	}
+
 }
 
-void thread_c_entry(ULONG initial_input) {
-	char msg[32];
-
-	while(1)
-	{
-		for (int i = 0; i < 3; i++) {
-			tx_queue_receive(&queue_c, msg, TX_WAIT_FOREVER);
-		}
-
-		count_c++;
-		tx_thread_relinquish();
-	}
-}
 /* USER CODE END 1 */
