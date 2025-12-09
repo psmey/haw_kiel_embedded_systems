@@ -51,27 +51,13 @@
 /* USER CODE BEGIN PV */
 uint8_t tracex_buffer[TRACEX_BUFFER_SIZE];
 
-uint8_t thread_gatekeeper_stack[THREAD_STACK_SIZE];
-TX_THREAD thread_gatekeeper;
+TX_TIMER timer;
 
-uint8_t thread_1_stack[THREAD_STACK_SIZE];
-TX_THREAD thread_1;
-
-uint8_t thread_2_stack[THREAD_STACK_SIZE];
-TX_THREAD thread_2;
-
-TX_QUEUE queue;
-static CHAR queue_memory[CHAR_IN_ONE_BYTE * MESSAGE_LENGTH * 64];
-
-TX_BYTE_POOL block_pool;
-CHAR block_pool_mem[2000];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-void thread_gatekeeper_entry(ULONG initial_input);
-void thread_1_entry(ULONG initial_input);
-void thread_2_entry(ULONG initial_input);
+void timer_function(ULONG);
 /* USER CODE END PFP */
 
 /**
@@ -89,52 +75,17 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   tx_trace_enable(&tracex_buffer, TRACEX_BUFFER_SIZE, 30);
 
-  tx_queue_create(&queue, "queue", 16, &queue_memory, sizeof(queue_memory));
+  // TIMER_TICKS_PER_SECOND 1000 -> 1000 Ticks per second instead of just 100
+  // --> faster LED!
 
-  tx_byte_pool_create(
-	  &block_pool, // pointer to block pool
-	  "block_pool", // pointer name
-	  (VOID *) block_pool_mem, // start address of the pool
-	  1000 // pool size: number of bytes in the pool
-  );
-
-  tx_thread_create(
-	&thread_gatekeeper,
-	"thread_gatekeeper",
-	thread_gatekeeper_entry,
-	0x01234,
-	thread_gatekeeper_stack,
-	THREAD_STACK_SIZE,
-	1,
-	1,
-	TX_NO_TIME_SLICE,
-	TX_AUTO_START
-  );
-
-  tx_thread_create(
-  	&thread_1,
-  	"thread_1",
-	thread_1_entry,
-  	0x01234,
-	thread_1_stack,
-  	THREAD_STACK_SIZE,
-  	1,
-  	1,
-  	TX_NO_TIME_SLICE,
-  	TX_AUTO_START
-  );
-
-  tx_thread_create(
-  	&thread_2,
-  	"thread_2",
-	thread_2_entry,
-  	0x01234,
-	thread_2_stack,
-  	THREAD_STACK_SIZE,
-  	1,
-  	1,
-  	TX_NO_TIME_SLICE,
-  	TX_AUTO_START
+  tx_timer_create(
+	  &timer, // pointer to time control block TCB
+	  "timer", // name
+	  timer_function, //pointer to expiration function
+	  0x1234, // input to expiration function
+	  100, // ticks until first expiration
+	  100, // ticks for all following expirations
+	  TX_AUTO_ACTIVATE // auto active or no active (so manually later)
   );
 
   /* USER CODE END App_ThreadX_Init */
@@ -161,57 +112,8 @@ void MX_ThreadX_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
-void thread_1_entry(ULONG initial_input) {
-	char *msg_ptr;
-	ULONG count = 0;
-	ULONG time;
-
-	while(1)
-	{
-		count++;
-		time = tx_time_get();
-
-		tx_byte_allocate(&block_pool, (VOID **) &msg_ptr, 64, TX_WAIT_FOREVER);
-
-		sprintf(msg_ptr, "Thread 1: executed %lu times, current system time: %lu.\n", count, time);
-
-		tx_queue_send(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
-
-		tx_thread_sleep(8);
-	}
+void timer_function(ULONG invalue)
+{
+	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
 }
-
-void thread_2_entry(ULONG initial_input) {
-	char *msg_ptr;
-	ULONG count = 0;
-	ULONG time;
-
-	while(1)
-	{
-		count++;
-		time = tx_time_get();
-
-		tx_byte_allocate(&block_pool, (VOID **) &msg_ptr, 64, TX_WAIT_FOREVER);
-
-		sprintf(msg_ptr, "Thread 2: executed %lu times, current system time: %lu.\n", count, time);
-
-		tx_queue_send(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
-
-		tx_thread_sleep(12);
-	}
-}
-
-void thread_gatekeeper_entry(ULONG initial_input) {
-	char *msg_ptr;
-
-	while(1)
-	{
-		tx_queue_receive(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
-
-		HAL_UART_Transmit(&huart2, (uint8_t*)msg_ptr, strlen((char*) msg_ptr), HAL_MAX_DELAY);
-
-		tx_byte_release((VOID *) msg_ptr);
-	}
-}
-
 /* USER CODE END 1 */
