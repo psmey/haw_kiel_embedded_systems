@@ -62,6 +62,9 @@ TX_THREAD thread_2;
 
 TX_QUEUE queue;
 static CHAR queue_memory[CHAR_IN_ONE_BYTE * MESSAGE_LENGTH * 64];
+
+TX_BYTE_POOL block_pool;
+CHAR block_pool_mem[2000];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -87,6 +90,13 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   tx_trace_enable(&tracex_buffer, TRACEX_BUFFER_SIZE, 30);
 
   tx_queue_create(&queue, "queue", 16, &queue_memory, sizeof(queue_memory));
+
+  tx_byte_pool_create(
+	  &block_pool, // pointer to block pool
+	  "block_pool", // pointer name
+	  (VOID *) block_pool_mem, // start address of the pool
+	  1000 // pool size: number of bytes in the pool
+  );
 
   tx_thread_create(
 	&thread_gatekeeper,
@@ -152,51 +162,56 @@ void MX_ThreadX_Init(void)
 
 /* USER CODE BEGIN 1 */
 void thread_1_entry(ULONG initial_input) {
-	char msg[MESSAGE_LENGTH];
-	ULONG count, time;
+	char *msg_ptr;
+	ULONG count = 0;
+	ULONG time;
 
 	while(1)
 	{
 		count++;
 		time = tx_time_get();
 
-		sprintf(msg, "Thread 1: executed %lu times, current system time: %lu.", count, time);
+		tx_byte_allocate(&block_pool, (VOID **) &msg_ptr, 64, TX_WAIT_FOREVER);
 
-		tx_queue_send(&queue, msg, TX_NO_WAIT);
+		sprintf(msg_ptr, "Thread 1: executed %lu times, current system time: %lu.\n", count, time);
+
+		tx_queue_send(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
 
 		tx_thread_sleep(8);
 	}
 }
 
 void thread_2_entry(ULONG initial_input) {
-	char msg[MESSAGE_LENGTH];
-	ULONG count, time;
+	char *msg_ptr;
+	ULONG count = 0;
+	ULONG time;
 
 	while(1)
 	{
 		count++;
 		time = tx_time_get();
 
-		sprintf(msg, "Thread 2: executed %lu times, current system time: %lu.", count, time);
+		tx_byte_allocate(&block_pool, (VOID **) &msg_ptr, 64, TX_WAIT_FOREVER);
 
-		tx_queue_send(&queue, msg, TX_NO_WAIT);
+		sprintf(msg_ptr, "Thread 2: executed %lu times, current system time: %lu.\n", count, time);
+
+		tx_queue_send(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
 
 		tx_thread_sleep(12);
 	}
 }
 
 void thread_gatekeeper_entry(ULONG initial_input) {
-	char msg[MESSAGE_LENGTH];
+	char *msg_ptr;
 
 	while(1)
 	{
-		tx_queue_receive(&queue, msg, TX_WAIT_FOREVER);
+		tx_queue_receive(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
 
-		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart2, (uint8_t*)msg_ptr, strlen((char*) msg_ptr), HAL_MAX_DELAY);
 
-		tx_thread_sleep(30);
+		tx_byte_release((VOID *) msg_ptr);
 	}
-
 }
 
 /* USER CODE END 1 */
