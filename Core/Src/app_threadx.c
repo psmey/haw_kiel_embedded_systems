@@ -53,11 +53,16 @@ uint8_t tracex_buffer[TRACEX_BUFFER_SIZE];
 
 TX_TIMER timer;
 
+uint8_t thread_stack[THREAD_STACK_SIZE];
+TX_THREAD thread;
+
+TX_SEMAPHORE semaphore;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
 void timer_function(ULONG);
+void thread_entry(ULONG initial_input);
 /* USER CODE END PFP */
 
 /**
@@ -75,8 +80,7 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   tx_trace_enable(&tracex_buffer, TRACEX_BUFFER_SIZE, 30);
 
-  // TIMER_TICKS_PER_SECOND 1000 -> 1000 Ticks per second instead of just 100
-  // --> faster LED!
+  tx_semaphore_create(&semaphore, "semaphore", 0);
 
   tx_timer_create(
 	  &timer, // pointer to time control block TCB
@@ -86,6 +90,19 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 	  100, // ticks until first expiration
 	  100, // ticks for all following expirations
 	  TX_AUTO_ACTIVATE // auto active or no active (so manually later)
+  );
+
+  tx_thread_create(
+	  &thread,
+	  "thread",
+	  thread_entry,
+	  0x01234,
+	  thread_stack,
+	  THREAD_STACK_SIZE,
+	  1,
+	  1,
+	  TX_NO_TIME_SLICE,
+	  TX_AUTO_START
   );
 
   /* USER CODE END App_ThreadX_Init */
@@ -114,6 +131,14 @@ void MX_ThreadX_Init(void)
 /* USER CODE BEGIN 1 */
 void timer_function(ULONG invalue)
 {
-	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+	tx_semaphore_put(&semaphore);
+}
+
+void thread_entry(ULONG initial_input) {
+	while(1)
+	{
+		tx_semaphore_get(&semaphore, TX_WAIT_FOREVER);
+		HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+	}
 }
 /* USER CODE END 1 */
