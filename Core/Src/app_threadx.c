@@ -60,11 +60,16 @@ TX_THREAD thread_1;
 uint8_t thread_2_stack[THREAD_STACK_SIZE];
 TX_THREAD thread_2;
 
-TX_QUEUE queue;
-static CHAR queue_memory[CHAR_IN_ONE_BYTE * MESSAGE_LENGTH * 64];
+TX_QUEUE queue_1;
+static CHAR queue_memory_1[CHAR_IN_ONE_BYTE * MESSAGE_LENGTH * 64];
+
+TX_QUEUE queue_2;
+static CHAR queue_memory_2[CHAR_IN_ONE_BYTE * MESSAGE_LENGTH * 64];
 
 TX_BYTE_POOL block_pool;
 CHAR block_pool_mem[2000];
+
+TX_EVENT_FLAGS_GROUP event_group;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -89,7 +94,9 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   tx_trace_enable(&tracex_buffer, TRACEX_BUFFER_SIZE, 30);
 
-  tx_queue_create(&queue, "queue", 16, &queue_memory, sizeof(queue_memory));
+  tx_queue_create(&queue_1, "queue_1", 16, &queue_memory_1, sizeof(queue_memory_1));
+
+  tx_queue_create(&queue_2, "queue_2", 16, &queue_memory_2, sizeof(queue_memory_2));
 
   tx_byte_pool_create(
 	  &block_pool, // pointer to block pool
@@ -97,6 +104,8 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 	  (VOID *) block_pool_mem, // start address of the pool
 	  1000 // pool size: number of bytes in the pool
   );
+
+  tx_event_flags_create(&event_group, "event_group");
 
   tx_thread_create(
 	&thread_gatekeeper,
@@ -175,7 +184,9 @@ void thread_1_entry(ULONG initial_input) {
 
 		sprintf(msg_ptr, "Thread 1: executed %lu times, current system time: %lu.\n", count, time);
 
-		tx_queue_send(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
+		tx_queue_send(&queue_1, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
+
+		tx_event_flags_set(&event_group, 0x1, TX_OR);
 
 		tx_thread_sleep(8);
 	}
@@ -195,22 +206,38 @@ void thread_2_entry(ULONG initial_input) {
 
 		sprintf(msg_ptr, "Thread 2: executed %lu times, current system time: %lu.\n", count, time);
 
-		tx_queue_send(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
+		tx_queue_send(&queue_2, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
+
+		tx_event_flags_set(&event_group, 0x2, TX_OR);
 
 		tx_thread_sleep(12);
 	}
 }
 
 void thread_gatekeeper_entry(ULONG initial_input) {
-	char *msg_ptr;
+	char *msg_ptr_1;
+	char *msg_ptr_2;
+	ULONG events;
 
 	while(1)
 	{
-		tx_queue_receive(&queue, (VOID *) &msg_ptr, TX_WAIT_FOREVER);
+		tx_event_flags_get(&event_group, 0x3, TX_OR_CLEAR, &events, TX_WAIT_FOREVER);
 
-		HAL_UART_Transmit(&huart2, (uint8_t*)msg_ptr, strlen((char*) msg_ptr), HAL_MAX_DELAY);
+		if (events & 1UL) {
+			tx_queue_receive(&queue_1, (VOID *) &msg_ptr_1, TX_WAIT_FOREVER);
 
-		tx_byte_release((VOID *) msg_ptr);
+			HAL_UART_Transmit(&huart2, (uint8_t*)msg_ptr_1, strlen((char*) msg_ptr_1), HAL_MAX_DELAY);
+
+			tx_byte_release((VOID *) msg_ptr_1);
+		}
+
+		if (events & (1UL << 7)) {
+			tx_queue_receive(&queue_2, (VOID *) &msg_ptr_2, TX_WAIT_FOREVER);
+
+			HAL_UART_Transmit(&huart2, (uint8_t*)msg_ptr_2, strlen((char*) msg_ptr_2), HAL_MAX_DELAY);
+
+			tx_byte_release((VOID *) msg_ptr_2);
+		}
 	}
 }
 
